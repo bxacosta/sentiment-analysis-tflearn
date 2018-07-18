@@ -1,0 +1,5 @@
+### App config ###
+appconfig.py
+
+### VS Code ###
+/__pycache__/
