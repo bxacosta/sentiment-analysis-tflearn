@@ -3,14 +3,17 @@ import dataloader
 import numpy as np
 from nltk.stem.snowball import SnowballStemmer
 
+# Consulta si la la palabra ingresada como parametro esta en la lista de stopwords
 def isStopword(word):
     stopwords = dataloader.stopwords()["stopword"].values
     return word in stopwords
 
+# Obtiene la palabra raiz de la parabra ingresada como parametro
 def getSteamm(word):
     stemmer = SnowballStemmer("spanish")
     return stemmer.stem(word)
 
+# Obtiene el lemma de la parabra ingresada como parametro
 def getLemma(word):
     lemmas = dataloader.lemmas()
     result = lemmas.loc[lemmas["variation"] == word]
@@ -19,6 +22,7 @@ def getLemma(word):
     else:
         return result["main"].values[0]
 
+# Elimina las referencias a usuarios, hastag y enlaces en el texto ingresado como parametro
 def removeReferences(text):
     words = text.split(" ")
     # Quitar hastag, usuarios, enlaces
@@ -27,6 +31,7 @@ def removeReferences(text):
             text = text.replace(word, "")
     return text
 
+# Elimina los acentos en el texto ingresado como parametro
 def removeAccents(text):
     text = text.replace("á", "a")
     text = text.replace("é", "e")
@@ -35,15 +40,19 @@ def removeAccents(text):
     text = text.replace("ú", "u")
     return text
 
+# Elimina los caracteres especiales en el texto ingresado como parametro
 def removeSpecialCharacters(text):
     return re.sub("[^a-zñ ]", "", text)
 
+# Elimina los espacios extra y las tabulaciones en el texto ingresado como parametro
 def removeExtraSpaces(text):
     return re.sub("[ \t]+", " ", text)
 
+# Elimina los caracteres unicode presentes en el texto ingresado como parametro
 def removeUnicode(text):
     return (text.encode('ascii', 'ignore')).decode("utf-8")
 
+# Limpia un texto con los metodos anteriores
 def clear(text): 
     text = text.lower()
     text = removeReferences(text)   
@@ -52,6 +61,7 @@ def clear(text):
     text = removeExtraSpaces(text)
     return text
 
+# Simplifica un texto eliminando las stopwords y lematizando
 def simplify(text):
     text_clear = clear(text)
     words = text_clear.split(" ")
@@ -64,6 +74,7 @@ def simplify(text):
       
     return " ".join(simple_text)[1:]
 
+# Simplifica un texto eliminando las stopwords y onteniendo sus palabra raiz
 def minimize(text):
     text_clear = clear(text)
     words = text_clear.split(" ")
@@ -82,5 +93,7 @@ if __name__ == '__main__':
     text = "@lenin El Ecuador debe incentivar el uso de energas alternativas como parte de su compromiso con los ODS de @ONU_es  y el Acuerdo de Paris. La medida oportuna es el estmulo fiscal de los productos que las demanden y desestmulo a las energas fsiles. https:"
     simplified = simplify(text)
     minimized = minimize(text)
-    print(simplified)
-    print(minimized)
+
+    print("original:", text)
+    print("simplificado:", simplified)
+    print("minimizado:", minimized)
