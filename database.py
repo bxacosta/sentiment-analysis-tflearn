@@ -1,6 +1,7 @@
 import pymysql
 import appconfig
 import numpy as np
+import pandas as pd
 
 __db = pymysql.connect(appconfig.db_host, appconfig.db_user, appconfig.db_password, appconfig.db_name)
 __cursor = __db.cursor()
@@ -14,7 +15,7 @@ __user_table = (
     "listed_count INT, "
     "favourites_count INT, "
     "statuses_count INT, "
-    "relevance DECIMAL(4,2)"
+    "relevance DECIMAL(10,2)"
 )
 
 __tweet_table = (
@@ -41,15 +42,16 @@ __training_table =(
 
 __result_table = (
     "id_result INT PRIMARY KEY AUTO_INCREMENT, "
-    "id_tweet VARCHAR(25), "
+    "id_tweet VARCHAR(25) UNIQUE, "
     "id_user VARCHAR(25), "
-    "simple_text VARCHAR(255), "
-    "polarity_model INT, "
-    "polarity_model_str VARCHAR(10), "
-    "polarity_dictionary INT, "
-    "polarity_dictionary_str VARCHAR(10), "
+    "user_screen_name VARCHAR(100), "
+    "in_reply_to_id_user VARCHAR(25), "
+    "in_reply_to_screen_name VARCHAR(100), "
+    "polarity_model VARCHAR(10), "
+    "polarity_dictionary VARCHAR(10), "
     "location VARCHAR(40), "
-    "relevance DECIMAL(4,2), "
+    "relevance DECIMAL(10,2), "
+    "simple_text VARCHAR(255)"
 )
 
 def createTables():
@@ -66,11 +68,61 @@ def createTables():
         __cursor.execute(sql)
         print("Tabla training creada")
 
-        # sql = "CREATE TABLE IF NOT EXISTS result("+ __result_table +")"
-        # __cursor.execute(sql)
-        # print("Tabla result creada")
+        sql = "CREATE TABLE IF NOT EXISTS result("+ __result_table +")"
+        __cursor.execute(sql)
+        print("Tabla result creada")
     except:
         print("Ocurrio un error al crear una de las tablas")
+
+# [id_tweet, polarity_dictionary, polarity_model, text]
+def saveResult(result):
+    skip = False
+
+    exist = existTweet(result[0], "result")
+    if exist is None:
+        skip = True
+    else:
+        if exist:
+            print("El tweet {} ya ha sido procesado".format(result[0]))
+            skip = True
+
+    if skip:
+        return False
+    else:
+        sql = ("SELECT u.id_user, u.screen_name, u.location, u.followers_count, "
+            "t.retweet_count, t.favorite_count, t.in_reply_to_user_id_str, t.in_reply_to_screen_name "
+            "FROM tweet t, user u "
+            "WHERE t.id_user = u.id_user AND t.id_tweet='{}'".format(result[0])
+        )
+
+        try:
+            __cursor.execute(sql)
+            [id_user, name, location, followers, retweet, favorite, reply_id, reply_name] = np.asarray(__cursor.fetchone())
+            
+            engagement = 0
+            followers = int(followers)
+            retweet = int(retweet)
+            favorite = int(favorite)
+
+            if followers > 0:
+                engagement = ((retweet + favorite)/followers)*100
+            
+            standar_location = location
+
+            sql = ("INSERT INTO result(id_tweet, id_user, user_screen_name, in_reply_to_id_user, in_reply_to_screen_name, polarity_dictionary, polarity_model, location, relevance, simple_text) " 
+                "VALUES('{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', {}, '{}')"
+            ).format(result[0], id_user, name, reply_id, reply_name, result[1], result[2], standar_location, engagement, result[3])
+
+            __cursor.execute(sql)
+            __db.commit()
+
+            #updateTweetProcessed(result[0], True)
+            return True
+
+        except:
+            __db.rollback()
+            print("Error al guardar el resultado:", result[0])
+            return False
 
 def saveTweet(tweet):
     skip = False
@@ -162,9 +214,38 @@ def getRandomTweets(amount):
     sql = "SELECT id_tweet, text FROM tweet ORDER BY RAND() LIMIT {}".format(amount)
     try:
         __cursor.execute(sql)
-        return np.asarray(__cursor.fetchall())
+        results = np.asarray(__cursor.fetchall())
+
+        df = pd.DataFrame(results)
+        df.columns = ["id_tweet", "text"]
+        return df
     except:
         print("Error no se puede obtener los {} tweets".format(amount))
+        return None
+
+def getUnprocessedTweets(start, end):
+    sql = "SELECT id_tweet, text FROM tweet WHERE processed=false ORDER BY id_tweet LIMIT {}, {}".format(start, end)
+    try:
+        __cursor.execute(sql)
+        results = np.asarray(__cursor.fetchall())
+        df = pd.DataFrame(results)
+        df.columns = ["id_tweet", "text"]
+        return df
+    except:
+        print("Error no se puede obtener los tweets")
+        return None
+
+def getAllUnprocessedTweets():
+    sql = "SELECT id_tweet, text FROM tweet WHERE processed=false ORDER BY id_tweet"
+    try:
+        __cursor.execute(sql)
+        results = np.asarray(__cursor.fetchall())
+
+        df = pd.DataFrame(results)
+        df.columns = ["id_tweet", "text"]
+        return df
+    except:
+        print("Error no se puede obtener los tweets")
         return None
 
 def saveTrainingData(data):
@@ -201,6 +282,35 @@ def existTweet(id, table):
         return number_of_rows > 0
     except:
         print("Error al consultar si existe el tweet con id:", id)
+        return None
+
+def getTrainingDataSet(num_positive, num_negative, num_neutral):
+    sql1 = "SELECT polarity, text FROM training WHERE polarity='{}' ORDER BY RAND() LIMIT {}".format("positive", num_positive)
+    sql2 = "SELECT polarity, text FROM training WHERE polarity='{}' ORDER BY RAND() LIMIT {}".format("negative", num_negative)
+    sql3 = "SELECT polarity, text FROM training WHERE polarity='{}' ORDER BY RAND() LIMIT {}".format("neutral", num_neutral)
+    
+    try:
+        data = []
+
+        if num_positive > 0:
+            __cursor.execute(sql1)
+            data.extend(__cursor.fetchall()) 
+
+        if num_negative > 0:
+            __cursor.execute(sql2)
+            data.extend(__cursor.fetchall()) 
+
+        if num_neutral > 0:
+            __cursor.execute(sql3)
+            data.extend(__cursor.fetchall()) 
+
+        training = np.asarray(data)
+        df = pd.DataFrame(training)
+        df.columns = ["polarity", "text"]
+
+        return df
+    except:
+        print("Error al obtener los tweets de entrenamiento")
         return None
 
 def close():

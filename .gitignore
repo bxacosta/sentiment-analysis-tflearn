@@ -1,5 +1,9 @@
 ### App config ###
 appconfig.py
 
+## Test files
+test.py
+
 ### VS Code ###
 /__pycache__/
+.vscode

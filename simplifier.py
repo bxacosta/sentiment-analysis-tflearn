@@ -9,7 +9,7 @@ def isStopword(word):
     return word in stopwords
 
 # Obtiene la palabra raiz de la parabra ingresada como parametro
-def getSteamm(word):
+def getStem(word):
     stemmer = SnowballStemmer("spanish")
     return stemmer.stem(word)
 
@@ -25,11 +25,12 @@ def getLemma(word):
 # Elimina las referencias a usuarios, hastag y enlaces en el texto ingresado como parametro
 def removeReferences(text):
     words = text.split(" ")
+    new_text = []
     # Quitar hastag, usuarios, enlaces
     for word in words:
-        if (word.find("@") >= 0) or (word.find("#") >= 0) or (word.find("http") >= 0) or (word.find("https") >= 0):
-            text = text.replace(word, "")
-    return text
+        if (word.find("@") < 0) and (word.find("#") < 0) and (word.find("http") < 0) and (word.find("https") < 0):
+            new_text.append(word)
+    return " ".join(new_text)
 
 # Elimina los acentos en el texto ingresado como parametro
 def removeAccents(text):
@@ -54,7 +55,7 @@ def removeUnicode(text):
 
 # Limpia un texto con los metodos anteriores
 def clear(text): 
-    text = text.lower()
+    text = text.lower()    
     text = removeReferences(text)   
     text = removeAccents(text)
     text = removeSpecialCharacters(text)
@@ -72,7 +73,7 @@ def simplify(text):
             lemma = getLemma(word)
             simple_text.append(lemma)
       
-    return " ".join(simple_text)[1:]
+    return " ".join(simple_text)
 
 # Simplifica un texto eliminando las stopwords y onteniendo sus palabra raiz
 def minimize(text):
@@ -83,10 +84,10 @@ def minimize(text):
     for word in words:
         if not isStopword(word):
             #lemma = getLemma(word)
-            steam = getSteamm(word)
-            simple_text.append(steam)
+            stem = getStem(word)
+            simple_text.append(stem)
         
-    return " ".join(simple_text)[1:]
+    return " ".join(simple_text)
 
 
 if __name__ == '__main__':

@@ -10,7 +10,7 @@ __auth = tweepy.OAuthHandler(appconfig.consumer_key, appconfig.consumer_secret)
 __auth.set_access_token(appconfig.access_token, appconfig.access_token_secret)
 __api = tweepy.API(__auth, wait_on_rate_limit=True)
 
-__users_id = appconfig.accounts_id
+__users_id = []
 
 # Descarga todos los tweets que contega el string especificado
 #
@@ -62,7 +62,7 @@ def __filterData(tweets):
                 simple_location = location.lower()
                 simple_location = simplifier.removeAccents(simple_location)
                 simple_location = simplifier.removeUnicode(simple_location)
-                for [province, city] in dataloader.locations():
+                for [province, city] in dataloader.locations().values:
                     if (simple_location.find(province) >= 0) or (simple_location.find(city) >= 0):
                         tweet.user.location = city
                     elif simple_location.find("ecuador") >= 0:
@@ -75,6 +75,9 @@ def __filterData(tweets):
     return filter_tweets
 
 if __name__ == '__main__':
+    # Twitter Accounts [Lenin, VamosLenin, MashiRafael, Presidencia_Ec, GabrielaEsPais, ppsesa, RicardoPatinoEC, LeninistasEC, EddiChonero1]
+    __users_id = ["913131817", "4928285463", "209780362", "101895924", "271975968", "215996236", "202792190", "4895147265", "792518742"]
+
     tweets = getTweetsByQuery("Lenin")
 
     num_saved = 0
