@@ -46,7 +46,7 @@ def __buildModel(train_x, train_y, vocab_size, num_classes, learning_rate):
     net = tflearn.input_data([None, vocab_size])
 
     # hiden layers
-    net = tflearn.embedding(net, input_dim=vocab_size, output_dim=128)
+    net = tflearn.embedding(net, input_dim=10000, output_dim=128)
     net = tflearn.lstm(net, 128, dropout=0.8)
 
     # output layer
@@ -54,8 +54,16 @@ def __buildModel(train_x, train_y, vocab_size, num_classes, learning_rate):
     
     net = tflearn.regression(net, optimizer='adam', learning_rate=learning_rate, loss='categorical_crossentropy')
 
+
+    # net = tflearn.fully_connected(net, 40, activation='ReLU')
+    # net = tflearn.fully_connected(net, 60, activation='ReLU')
+    # net = tflearn.fully_connected(net, 10, activation='ReLU')
+    
+    # net = tflearn.fully_connected(net, num_classes, activation='softmax')
+    # net = tflearn.regression(net, optimizer='sgd', learning_rate=learning_rate, loss='categorical_crossentropy')
+
     model = tflearn.DNN(net)
-    model.fit(train_x, train_y, validation_set=0.2, show_metric=True, batch_size=32)    
+    model.fit(train_x, train_y, show_metric=True, batch_size=32)    
     return model
 
 def __loadModel(path, vocab_size, num_classes, learning_rate):
@@ -65,13 +73,13 @@ def __loadModel(path, vocab_size, num_classes, learning_rate):
     net = tflearn.input_data([None, vocab_size])
 
     # hiden layers
-    net = tflearn.embedding(net, input_dim=vocab_size, output_dim=128)
+    net = tflearn.embedding(net, input_dim=10000, output_dim=128)
     net = tflearn.lstm(net, 128, dropout=0.8)
 
     # output layer
     net = tflearn.fully_connected(net, num_classes, activation='softmax')
     
-    net = tflearn.regression(net, optimizer='adam', learning_rate=learning_rate, loss='categorical_crossentropy')
+    #net = tflearn.regression(net, optimizer='adam', learning_rate=learning_rate, loss='categorical_crossentropy')
 
     model = tflearn.DNN(net)
     model.load(path)
@@ -131,9 +139,9 @@ def __createDatasetFromDtabase(num_pos, num_neg, num_neu, path):
     return trainingDataSet
 
 def initNeuralNet():
-    num_pos = 20
-    num_neg = 20
-    num_neu = 20
+    num_pos = 80
+    num_neg = 80
+    num_neu = 80
 
     if os.path.exists(__VOCABULARY) and os.path.exists(__CLASSES):
         print("-----------------------------------------------------")
@@ -174,13 +182,13 @@ def initNeuralNet():
     if os.path.exists(__NEURAL_MODEL + ".index"):
         print("-----------------------------------------------------")
         print("Cargando modelo de red neuronal:", __NEURAL_MODEL)
-        model = __loadModel(__NEURAL_MODEL, len(vocabulary), len(classes), 0.1)
+        model = __loadModel(__NEURAL_MODEL, len(vocabulary), len(classes), 0.01)
         print("-----------------------------------------------------")
     else:
         print("-----------------------------------------------------")
         print("Entrenando un nuevo modelo de red neuronal")
         train_x, train_y, classes = __prepareData(trainingDataSet["text"].values, trainingDataSet["polarity"].values, vocabulary)
-        model = __buildModel(train_x, train_y, len(vocabulary), len(classes), 0.1)
+        model = __buildModel(train_x, train_y, len(vocabulary), len(classes), 0.01)
         print("Guardando el modelo de red neuronal:", __NEURAL_MODEL)
         model.save(__NEURAL_MODEL)
         print("-----------------------------------------------------")
@@ -227,7 +235,7 @@ if __name__ == '__main__':
     if os.path.exists(path):
         testSet = dl.readFile(__TRAINING_SET)
     else:
-        testSet = __createDatasetFromDtabase(20, 20, 20, path)
+        testSet = __createDatasetFromDtabase(30, 30, 30, path)
 
     test_x, test_y, classes = __prepareData(testSet["text"].values, testSet["polarity"].values, vocabulary)
 

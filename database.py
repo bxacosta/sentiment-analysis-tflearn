@@ -307,7 +307,7 @@ def getTrainingDataSet(num_positive, num_negative, num_neutral):
         training = np.asarray(data)
         df = pd.DataFrame(training)
         df.columns = ["polarity", "text"]
-
+        df.sort_values(by=["text"])
         return df
     except:
         print("Error al obtener los tweets de entrenamiento")

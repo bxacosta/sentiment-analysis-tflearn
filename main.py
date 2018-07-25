@@ -5,7 +5,7 @@ import simplifier as sp
 if __name__ == '__main__':
     model, vocabulary, classes = sm.initNeuralNet()
 
-    tweets = db.getUnprocessedTweets(0, 100).values
+    tweets = db.getAllUnprocessedTweets().values
 
     num = 0
     for [id_tweet, text] in tweets:
